@@ -33,6 +33,7 @@
 #include <spawn.h>
 #include <strings.h>
 #include <sys/mman.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/wait.h>
@@ -654,6 +655,33 @@ namespace
 
 	bool sleepOrStop(Instance& in, int ms);
 
+	// posix_spawn, then lifts the child's address-space limit before it runs (see md-engine's waitForGo): MoveOriginal's RLIMIT_AS
+	// (1.78 GB) is inherited, and the emulator reserves several GB of addresses. This process has CAP_SYS_RESOURCE; the child does not.
+	int spawnLifted(pid_t& pid, const char* exe, posix_spawn_file_actions_t* fa, char* const* argv)
+	{
+		int go[2];
+		if(pipe(go) != 0) return errno;
+		posix_spawn_file_actions_adddup2(fa, go[0], 4);
+		posix_spawn_file_actions_addclose(fa, go[1]);
+		std::vector<std::string> envs;
+		for(char** e = environ; *e; ++e) envs.emplace_back(*e);
+		envs.emplace_back("MD_GO_FD=4");
+		std::vector<char*> envp;
+		for(auto& e : envs) envp.push_back(e.data());
+		envp.push_back(nullptr);
+		const int rc = posix_spawn(&pid, exe, fa, nullptr, argv, envp.data());
+		close(go[0]);
+		if(rc == 0)
+		{
+			const rlimit unlimited{RLIM_INFINITY, RLIM_INFINITY};
+			prlimit(pid, RLIMIT_AS, &unlimited, nullptr);	// may fail (no CAP_SYS_RESOURCE, e.g. a test harness): the child tries anyway
+			const char b = 1;
+			(void)!write(go[1], &b, 1);
+		}
+		close(go[1]);
+		return rc;
+	}
+
 	// The factory kits and ROM samples from the user's flash image (the "flash" upload): bin/md-import boots the emulated Machinedrum
 	// once (about 6 minutes on a Move) and writes factory/FACTORY.syx and factory/ROM_SAMPLES.bin. Run before the engine starts (both at
 	// once could run the Move out of memory), and only for an image not imported yet (factory/.flash-signature). Returns false when
@@ -675,6 +703,8 @@ namespace
 			if(same) return true;
 		}
 		mkdir(factory, 0755);
+		char gate[600];
+		std::snprintf(gate, sizeof gate, "%s/md-engine", in.moduleDir);
 		std::snprintf(exe, sizeof exe, "%s/bin/md-import", in.moduleDir);
 		std::snprintf(log, sizeof log, "%s/import.log", factory);
 		std::snprintf(in.error, sizeof in.error, "Importing your flash image (factory kits, ROM samples): about 6 minutes, first time only");
@@ -682,9 +712,10 @@ namespace
 		posix_spawn_file_actions_init(&fa);
 		posix_spawn_file_actions_addopen(&fa, 1, "/dev/null", O_WRONLY, 0);
 		posix_spawn_file_actions_addopen(&fa, 2, "/dev/null", O_WRONLY, 0);	// md-import keeps its own log (factory/import.log)
-		char* argv[] = {exe, flash, const_cast<char*>(os), factory, nullptr};
+		char execFlag[] = "--exec";
+		char* argv[] = {gate, execFlag, exe, flash, const_cast<char*>(os), factory, nullptr};	// md-engine --exec: under the lifted limit
 		pid_t pid = -1;
-		const int rc = posix_spawn(&pid, exe, &fa, nullptr, argv, environ);
+		const int rc = spawnLifted(pid, gate, &fa, argv);
 		posix_spawn_file_actions_destroy(&fa);
 		if(rc != 0) { std::snprintf(in.error, sizeof in.error, "cannot start the flash import: %s", std::strerror(rc)); return true; }
 		int status = 0;
@@ -712,7 +743,7 @@ namespace
 		posix_spawn_file_actions_addopen(&fa, 1, log, O_WRONLY | O_CREAT | O_APPEND, 0644);	// the emulator prints; cleared per instance (supervise)
 		posix_spawn_file_actions_adddup2(&fa, 1, 2);
 		char* argv[] = {exe, const_cast<char*>(os), const_cast<char*>(rom), log, ppid, prio, nullptr};
-		const int rc = posix_spawn(&pid, exe, &fa, nullptr, argv, environ);
+		const int rc = spawnLifted(pid, exe, &fa, argv);
 		posix_spawn_file_actions_destroy(&fa);
 		if(rc != 0) { std::snprintf(in.error, sizeof in.error, "cannot start %s: %s", exe, std::strerror(rc)); return false; }
 		return true;

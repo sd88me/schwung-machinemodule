@@ -19,6 +19,7 @@
 
 #include <dlfcn.h>
 #include <sched.h>
+#include <sys/resource.h>
 #include <signal.h>
 #include <unistd.h>
 
@@ -110,6 +111,11 @@ int main(int argc, char** argv)
 {
 	if(argc < 2) { std::fprintf(stderr, "usage: md-hosttest <module dir> [out.wav]\n"); return 2; }
 	const std::string dir = argv[1];
+	{
+		// MoveOriginal's address-space limit, which the module's children inherit (the plugin lifts theirs: needs root here)
+		const rlimit as{1782439936, 1782439936};
+		setrlimit(RLIMIT_AS, &as);
+	}
 	host_api_v1_t host{};
 	host.get_bpm = bpm;
 	host.get_clock_status = clockStatus;

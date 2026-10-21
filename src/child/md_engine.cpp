@@ -10,6 +10,7 @@
 // engine, as the desktop plugin does.
 #include <algorithm>
 #include <chrono>
+#include <cerrno>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -146,8 +147,21 @@ namespace
 	}
 }
 
+// The plugin starts this process (and, through --exec, the flash import) with a pipe on fd 4 and writes one byte to it once it has
+// raised the child's address-space limit: MoveOriginal runs with RLIMIT_AS 1.78 GB, which a child inherits and cannot raise itself, and
+// the emulator reserves several GB of addresses (PROT_NONE, mostly never backed). Without the wait the reservation fails (abort).
+static void waitForGo()
+{
+	if(!std::getenv("MD_GO_FD")) return;
+	char b;
+	while(read(4, &b, 1) < 0 && errno == EINTR) {}
+	close(4);
+}
+
 int main(int argc, char** argv)
 {
+	waitForGo();
+	if(argc > 2 && !std::strcmp(argv[1], "--exec")) { execv(argv[2], argv + 2); return 127; }	// a helper run under the raised limit
 	if(argc < 5) { std::fprintf(stderr, "usage: md-engine <OS.syx> <ROM_SAMPLES.bin|-> <log> <parent pid> [fifo]\n"); return 2; }
 	g_log = std::fopen(argv[3], "a");
 	const pid_t parent = pid_t(std::atoi(argv[4]));	// as the plugin sees itself: Move's host runs in its own pid namespace
