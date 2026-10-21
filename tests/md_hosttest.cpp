@@ -178,6 +178,24 @@ int main(int argc, char** argv)
 		check(h.find("\"PTCH\"") != std::string::npos && h.find("\"HARM\"") != std::string::npos, "the TRX-BD Synth page has its own labels");
 	}
 
+	std::printf("machine picker, TRK\n");
+	{
+		const std::string groups = get("mach_groups");
+		std::printf("  groups: %s\n", groups.c_str());
+		const auto trx = groups.find("TRX");
+		const auto ix = groups.rfind("\"index\":", groups.find('}', trx));
+		set("ui_mgroup", std::to_string(std::atoi(groups.c_str() + groups.find(':', ix) + 1)).c_str());
+		const std::string list = get("mach_list");
+		std::printf("  TRX list: %.120s...\n", list.c_str());
+		set("ui_track", "3");
+		const auto cp = list.find("TRX-CP");
+		set("ui_mpick", std::to_string(std::atoi(list.c_str() + list.find("\"index\":", cp) + 8)).c_str());
+		run(200);
+		check(get("t03_machine") == "TRX-CP", "the picker put TRX-CP on the focused track (3)");
+		check(get("t01_ui_track") == "3", "TRK on a track page reads the focused track (t01_ui_track)");
+		set("ui_track", "1");
+	}
+
 	std::printf("notes\n");
 	record = argc > 2;
 	const int16_t silent = run(200);
@@ -230,8 +248,9 @@ int main(int argc, char** argv)
 
 	std::printf("kits\n");
 	{
-		const std::string h = get("ui_hierarchy");
-		const bool haveKits = h.find("\"options\":[\"Init\",") != std::string::npos;
+		const std::string kl = get("kit_list");
+		std::printf("  kit list: %.100s...\n", kl.c_str());
+		const bool haveKits = kl.find("\"index\":1}") != std::string::npos;
 		std::printf("  factory kits %s\n", haveKits ? "listed" : "not imported (Init only)");
 		if(haveKits)
 		{

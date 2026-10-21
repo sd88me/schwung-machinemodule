@@ -42,9 +42,13 @@
         {
           "title": "Kit pages",
           "lines": [
-            "Kit: Init, your",
-            " factory kits and",
+            "Kit: a list: Init,",
+            " the factory kits,",
             " your own kits",
+            "Machine: pick a",
+            " group, then the",
+            " machine (for the",
+            " track on screen)",
             "Echo, Reverb, EQ,",
             " Dynamix: the",
             " master effects",
