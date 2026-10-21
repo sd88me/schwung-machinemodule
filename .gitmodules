@@ -1,0 +1,3 @@
+[submodule "libs/machinemodule"]
+	path = libs/machinemodule
+	url = https://github.com/sd88me/mpc-vst-machinedrum
