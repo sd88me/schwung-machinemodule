@@ -97,6 +97,26 @@ This repo holds the Move-only parts:
 
 [PROPOSAL.md](PROPOSAL.md) has the design and the measurements behind it.
 
+## Credits
+
+- **Elektron**, for the Machinedrum. Its firmware and sound are theirs; this module ships none of it.
+- **The emulators:**
+  - **[dsp56300](https://github.com/dsp56300/dsp56300)**, the DSP56300 emulator and JIT the Machinedrum's DSP code runs on (through
+    [our fork](https://github.com/sd88me/dsp56300)), with its bundled asmjit.
+  - **[gearmulator-md-mm](https://github.com/joelanders/gearmulator-md-mm)** by Joe Landers: a full-system Machinedrum and Monomachine
+    emulation, built on [The Usual Suspects' Gearmulator](https://github.com/dsp56300/gearmulator). It was the reference for this
+    engine, and its `mdProbe` is what imports your flash image on the Move. Its Musashi 68k core, by Karl Stenerud, runs the OS's
+    machine routines.
+- **shnolk's [Monomodule](https://github.com/shnolk/monomodule)**: the Monomachine emulated the same way, the approach this engine
+  follows (the machine's own DSP in an emulator, a model of the main processor), and its OS-file decoder.
+- **legsmechanical's [Monomodule for Schwung](https://github.com/legsmechanical/schwung-monomodule)**: the way to host an emulated
+  Elektron engine on Move, which this module follows: a separate engine process, shared memory and a supervisor that restarts it.
+- **legsmechanical's [DR32](https://github.com/legsmechanical/schwung-dr32)**: the interface this follows: Schwung's own knob grid,
+  few menus, and pages that follow the pad you hit.
+- **[Schwung](https://github.com/charlesvestal/schwung)** by Charles Vestal, the framework this runs in.
+- The engine, shared with the desktop plugin and the MPC builds: [sd88me/mpc-vst-machinedrum](https://github.com/sd88me/mpc-vst-machinedrum).
+- Built with [Claude Code](https://claude.com/claude-code).
+
 ## Licence
 
 AGPL-3.0, as the engine. `src/host_api/plugin_api_v1.h` is Schwung's (MIT, see `src/host_api/README`).
