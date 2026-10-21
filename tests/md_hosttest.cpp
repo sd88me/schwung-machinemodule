@@ -280,9 +280,9 @@ int main(int argc, char** argv)
 		std::printf("  %-34s underruns %4d, skips %4d, load %s%%, peak %s%%\n", label, u, sk, get("load").c_str(), get("peak").c_str());
 		return u;
 	};
-	// a typical beat on kit 1 (kick quarters, snare 2 and 4, hat 16ths, open hat, clap, a tom fill): the default settings (LTNCY 1,
+	// a typical beat on kit 1 (kick quarters, snare 2 and 4, hat 16ths, open hat, clap, a tom fill): the default settings (LTNCY 2, VOICES 10,
 	// master FX Full, no voice limit) must play it without a gap
-	std::printf("groove (kit 1, defaults: LTNCY 1, FX Full)\n");
+	std::printf("groove (kit 1, defaults: LTNCY 2, VOICES 10, FX Full)\n");
 	{
 		set("kit", "1");
 		run(800);
@@ -318,8 +318,8 @@ int main(int argc, char** argv)
 		busy("VOICES 6, LTNCY 2, FX Rev+Echo", 6);
 		check(get("master_on") == "Rev+Echo", "the master FX mode reads back");
 		set("master_on", "Full");
-		set("voices", "16");
-		set("depth", "1");
+		set("voices", "10");
+		set("depth", "2");
 	}
 	std::printf("  the callback's worst block: %.0f us\n", maxCallbackUs);
 	record = false;

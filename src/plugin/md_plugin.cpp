@@ -55,7 +55,8 @@ namespace
 
 	const host_api_v1_t* g_host = nullptr;
 
-	constexpr int kDefaultDepth = 1;	// 2.9 ms; LTNCY raises it (the user's choice, 2026-10-21)
+	constexpr int kDefaultDepth = 2;	// 5.8 ms: measured on a Move, a busy kit with ROM machines needs it (2.9 ms: LTNCY 1)
+	constexpr int kDefaultVoices = 10;	// with LTNCY 2, a busy kit with ROM machines and the full master FX played clean (16 = no limit)
 	constexpr int kDefaultFifo = 10;
 	constexpr int kNoteBase = 36;		// tracks 1-16 = notes 36-51 = Move's 16 drum pads
 	constexpr int kLiveMatchBlocks = 20;	// a pad press and its note meet within 58 ms (DR32's measured window)
@@ -79,7 +80,7 @@ namespace
 		int accThr = 100;	// MD mode: a hit at or above this is accented
 		int accAmt = 32;	// MD mode: how much softer (in velocity steps) an unaccented hit is than an accented one
 		int kit = -1;		// the last kit loaded (0 = Init, 1.. = catalog kits), for the Kit page
-		int voices = 16;	// VOICES: how many tracks may sound at once (the oldest is cut past it; a ROM machine counts 2); 16 = no limit
+		int voices = kDefaultVoices;	// VOICES: how many tracks may sound at once (the oldest is cut past it; a ROM machine counts 2); 16 = no limit
 		int fxMode = 0;		// master effects, when on: 0 the whole section, 1 reverb and echo only (EQ and dynamix skipped: ~25% less CPU)
 	};
 
@@ -101,6 +102,7 @@ namespace
 		Settings set;
 		uint32_t seenDefaults[kTracks] = {};
 		uint32_t trackOuts = 0;
+		uint32_t peakUs = 0;				// the worst block of the last ~5 s window (PEAK)
 
 		// editor
 		int focus = 0;						// the focused track (0-15)
@@ -452,7 +454,12 @@ namespace
 				{
 					char nm[8];
 					std::snprintf(keys[j], sizeof keys[j], "mfx%02d", b * 8 + j + 1);
-					std::snprintf(nm, sizeof nm, "%s%d", kShort[b], j + 1);
+					// the OS's own names: the CTR-RE / GB / EQ / DX machines' SYN labels are this block's parameters
+					const shm::Machine* ctl = nullptr;
+					for(int c = 0; c < 4; ++c) if(kCtrMasterBlock[c] == b) ctl = machineOf(in, kCtrEcho + c);
+					if(ctl && ctl->syn[j][0]) std::snprintf(nm, sizeof nm, "%s", ctl->syn[j]);
+					else std::snprintf(nm, sizeof nm, "%s%d", kShort[b], j + 1);
+					for(char* q = nm; *q; ++q) if(*q == '"' || *q == '\\') *q = ' ';
 					if(j) o.put(",");
 					putInt(o, keys[j], nm, 0, 127, kMasterDefault[b * 8 + j]);
 					kp[j] = keys[j];
@@ -472,7 +479,7 @@ namespace
 			putEnum(o, "vel_mode", "VELMD", kVel, 2, 0); o.put(",");
 			putInt(o, "acc_thr", "ACTHR", 1, 127, 100); o.put(",");
 			putInt(o, "acc_amt", "ACAMT", 0, 127, 32); o.put(",");
-			putInt(o, "voices", "VOICS", 4, 16, 16); o.put(",");
+			putInt(o, "voices", "VOICS", 4, 16, kDefaultVoices); o.put(",");
 			o.put("{\"key\":\"load\",\"name\":\"Engine Load\",\"short_name\":\"LOAD\",\"type\":\"int\",\"min\":0,\"max\":200,\"unit\":\"%%\",\"access\":\"read\",\"live\":true},");
 			o.put("{\"key\":\"peak\",\"name\":\"Peak Load\",\"short_name\":\"PEAK\",\"type\":\"int\",\"min\":0,\"max\":200,\"unit\":\"%%\",\"access\":\"read\",\"live\":true}");
 			o.put("]");
@@ -614,7 +621,7 @@ namespace
 		}
 		int m[kMasterBytes], s[9] = {};
 		if(!readInts(p, m, kMasterBytes) || !readInts(p, s, 8)) return;
-		if(!readInts(p, s + 8, 1)) s[8] = 16;	// a state from before VOICES
+		if(!readInts(p, s + 8, 1)) s[8] = kTracks;	// a state from before VOICES: no limit, as it played
 		for(int i = 0; i < kMasterBytes; ++i) v.master[size_t(i)] = std::clamp(m[i], 0, 127);
 		v.masterOn = s[0] != 0;
 		in.table = v;
@@ -1165,8 +1172,11 @@ namespace
 	{
 		auto* s = in.seg.load(std::memory_order_acquire);
 		if(!s || s->phase.load() != uint32_t(shm::Phase::Ready)) return 0;
-		const uint32_t us = peak ? s->stats.maxUs.load() : s->stats.lastUs.load();
-		return std::min(200, int(std::lround(100.0 * us / (1e6 * shm::kFrames / 44100.0))));
+		// LOAD: the last block against one block's time (the average must fit it at any LTNCY); PEAK: the worst block of the last
+		// ~5 s against LTNCY blocks' time (what a single block may take before it is late): under 100% = no gaps at this setting
+		const double block = 1e6 * shm::kFrames / 44100.0;
+		const double pct = peak ? 100.0 * std::max(in.peakUs, s->stats.maxUs.load()) / (block * in.set.depth) : 100.0 * s->stats.lastUs.load() / block;
+		return std::min(200, int(std::lround(pct)));
 	}
 
 	int getParam(void* ptr, const char* key, char* buf, int len)
@@ -1274,6 +1284,11 @@ namespace
 			if(bpm > 0.f && std::fabs(bpm - in.lastBpm) > 0.01f) { in.lastBpm = bpm; push(in, shm::Op::SetBpm, 0, 0, int(std::lround(bpm * 100.f))); }
 		}
 		if(in.pressArmed && in.block - in.pressBlock > kLiveMatchBlocks) in.pressArmed = false;
+		if(in.block % 1723 == 0)	// ~5 s: PEAK shows the worst block of the last window (the engine's max, taken and restarted)
+		{
+			in.peakUs = s->stats.maxUs.load();
+			s->stats.maxUs.store(0);
+		}
 		return s;
 	}
 

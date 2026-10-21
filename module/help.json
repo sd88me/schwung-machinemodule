@@ -59,15 +59,16 @@
             " or Dynamix: less",
             " CPU, quieter)",
             "LTNCY: 1-4 blocks",
-            " of 2.9 ms. Raise",
-            " it if it clicks",
+            " of 2.9 ms (2)",
             "VELMD: MD or VEL",
             "ACTHR, ACAMT: the",
             " MD mode's accent",
             "VOICS: how many",
             " tracks sound at",
             " once (16 = all)",
-            "LOAD, PEAK: CPU"
+            "LOAD: CPU now",
+            "PEAK: worst of 5s",
+            " (over 100% clicks)"
           ]
         }
       ]
@@ -115,10 +116,11 @@
         "A busy kit with",
         "the master FX is",
         "a lot for a Move.",
-        "If it clicks:",
-        "LTNCY 2, then FX",
-        "Rev+Echo, then",
-        "VOICS 8 or less."
+        "If PEAK goes over",
+        "100% it clicks:",
+        "VOICS down (8),",
+        "LTNCY 3, or FX",
+        "Rev+Echo."
       ]
     }
   ]
