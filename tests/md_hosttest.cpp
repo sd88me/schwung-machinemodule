@@ -178,23 +178,10 @@ int main(int argc, char** argv)
 		check(h.find("\"PTCH\"") != std::string::npos && h.find("\"HARM\"") != std::string::npos, "the TRX-BD Synth page has its own labels");
 	}
 
-	std::printf("machine picker, TRK\n");
-	{
-		const std::string groups = get("mach_groups");
-		std::printf("  groups: %s\n", groups.c_str());
-		const auto trx = groups.find("TRX");
-		const auto ix = groups.rfind("\"index\":", groups.find('}', trx));
-		set("ui_mgroup", std::to_string(std::atoi(groups.c_str() + groups.find(':', ix) + 1)).c_str());
-		const std::string list = get("mach_list");
-		std::printf("  TRX list: %.120s...\n", list.c_str());
-		set("ui_track", "3");
-		const auto cp = list.find("TRX-CP");
-		set("ui_mpick", std::to_string(std::atoi(list.c_str() + list.find("\"index\":", cp) + 8)).c_str());
-		run(200);
-		check(get("t03_machine") == "TRX-CP", "the picker put TRX-CP on the focused track (3)");
-		check(get("t01_ui_track") == "3", "TRK on a track page reads the focused track (t01_ui_track)");
-		set("ui_track", "1");
-	}
+	std::printf("TRK\n");
+	set("ui_track", "3");
+	check(get("t01_ui_track") == "3", "TRK on a track page reads the focused track (t01_ui_track)");
+	set("ui_track", "1");
 
 	std::printf("notes\n");
 	record = argc > 2;

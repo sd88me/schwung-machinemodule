@@ -103,8 +103,7 @@ namespace
 		Settings set;
 		uint32_t seenDefaults[kTracks] = {};
 		uint32_t trackOuts = 0;
-		uint32_t peakUs = 0;
-		int pickGroup = 0;					// the machine picker's group (an index into machineGroups)				// the worst block of the last ~5 s window (PEAK)
+		uint32_t peakUs = 0;				// the worst block of the last ~5 s window (PEAK)
 
 		// editor
 		int focus = 0;						// the focused track (0-15)
@@ -229,20 +228,6 @@ namespace
 		return -1;
 	}
 
-	// The offered machines' groups ("TRX", "EFM" ...), in the OS's order; n: how many groups (at most 16)
-	int machineGroups(const Instance& in, char groups[16][4])
-	{
-		int n = 0;
-		for(int id = 0; id < shm::kMachineIds; ++id)
-			if(const auto* m = machineOf(in, id); m && offered(in, *m))
-			{
-				bool have = false;
-				for(int g = 0; g < n && !have; ++g) have = !std::strncmp(groups[g], m->name, 3);
-				if(!have && n < 16) { std::snprintf(groups[n], 4, "%.3s", m->name); ++n; }
-			}
-		return n;
-	}
-
 	uint64_t machineSet(const Instance& in)
 	{
 		uint64_t h = 1469598103934665603ull;
@@ -330,7 +315,7 @@ namespace
 		const bool ready = machineOf(in, 0) != nullptr;
 
 		o.put("{\"pad_layout\":\"drums\",\"levels\":{\"root\":{\"name\":\"Machinemodule\",\"params\":[");
-		o.put("{\"level\":\"kits\",\"label\":\"Kit\"},{\"level\":\"track\",\"label\":\"Track\"},{\"level\":\"mgroups\",\"label\":\"Machine\"}");
+		o.put("{\"level\":\"kits\",\"label\":\"Kit\"},{\"level\":\"track\",\"label\":\"Track\"}");
 		for(int id = 0; id < shm::kMachineIds; ++id)
 			if(used[id] && ready) o.put(",{\"level\":\"syn_%d\",\"label\":\"Synth\"}", id);
 		if(used[kCtr8P]) o.put(",{\"level\":\"ctr8_a\",\"label\":\"Targets 1-4\"},{\"level\":\"ctr8_b\",\"label\":\"Targets 5-8\"}");
@@ -340,10 +325,6 @@ namespace
 
 		// Kit: a full-screen list (the host's items page): Init, the factory kits, the user's; choosing loads it
 		o.put(",\"kits\":{\"name\":\"Kit\",\"items_param\":\"kit_list\",\"select_param\":\"kit\"}");
-		// Machine: the groups (GND, TRX, EFM ...), then that group's machines (DR32's sectioned engine picker, in the host's lists);
-		// choosing one puts it on the focused track and goes back to the Track page
-		o.put(",\"mgroups\":{\"name\":\"Machine\",\"items_param\":\"mach_groups\",\"select_param\":\"ui_mgroup\",\"navigate_to\":\"mlist\"}");
-		o.put(",\"mlist\":{\"name\":\"Machine\",\"items_param\":\"mach_list\",\"select_param\":\"ui_mpick\",\"navigate_to\":\"track\"}");
 
 		// Track: TRK suppresses the host's "Selected Pad" page (DR32's PAD knob does the same)
 		openTrackLevel(o, "track", "Track");
@@ -1122,8 +1103,6 @@ namespace
 		if(const int t = splitTrackKey(k, &sub); t >= 0) { setTrackValue(in, t, sub, val); return; }
 		if(!std::strcmp(k, "state")) { readState(in, val); return; }
 		if(!std::strcmp(k, "ui_track")) { setFocus(in, std::atoi(val) - 1); return; }
-		if(!std::strcmp(k, "ui_mgroup")) { in.pickGroup = std::max(0, std::atoi(val)); return; }
-		if(!std::strcmp(k, "ui_mpick")) { setTrackValue(in, in.focus, "machine", val); return; }	// a machine id from mach_list
 		if(!std::strcmp(k, "ui_live_press"))
 		{
 			// a finger hit a pad: the note may already be here (then it is the hand's), or arrive within the window
@@ -1222,38 +1201,6 @@ namespace
 				for(char* p = nm; *p; ++p) if(*p == '"' || *p == '\\' || *p < ' ') *p = ' ';
 				o.put(",{\"label\":\"%s%s\",\"index\":%zu}", i < c->factory ? "" : "User: ", nm, i + 1);
 			}
-			o.put("]");
-			return o.ok ? o.n : -1;
-		}
-		if(!std::strcmp(k, "mach_groups") || !std::strcmp(k, "mach_list"))	// the machine picker's two lists
-		{
-			char groups[16][4];
-			const int ng = machineGroups(in, groups);
-			const bool list = k[5] == 'l';
-			const int g = std::min(in.pickGroup, std::max(0, ng - 1));
-			const int cur = in.table.track[size_t(in.focus)].machine;
-			Out o{buf, len};
-			o.put("[");
-			int first = 1;
-			if(!list)
-				for(int i = 0; i < ng; ++i)
-				{
-					int count = 0;
-					bool here = false;
-					for(int id = 0; id < shm::kMachineIds; ++id)
-						if(const auto* m = machineOf(in, id); m && offered(in, *m) && !std::strncmp(m->name, groups[i], 3)) { ++count; here |= id == cur; }
-					o.put("%s{\"label\":\"%s%s (%d)\",\"index\":%d}", first ? "" : ",", here ? "> " : "", groups[i], count, i);
-					first = 0;
-				}
-			else if(ng)
-				for(int id = 0; id < shm::kMachineIds; ++id)
-					if(const auto* m = machineOf(in, id); m && offered(in, *m) && !std::strncmp(m->name, groups[g], 3))
-					{
-						char n[24];
-						displayName(*m, n, sizeof n);
-						o.put("%s{\"label\":\"%s%s\",\"index\":%d}", first ? "" : ",", id == cur ? "> " : "", n, id);
-						first = 0;
-					}
 			o.put("]");
 			return o.ok ? o.n : -1;
 		}
