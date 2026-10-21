@@ -7,20 +7,6 @@ Move's 16 drum pads, and the pages follow the pad you hit, in the style of [DR32
 
 Not affiliated with, endorsed by or sponsored by Elektron. **No firmware is included:** you upload your own Machinedrum OS file.
 
-## Install
-
-Requires Schwung 1.7.3 or later (tested on 1.7.3, on a standard Move).
-
-1. Download `machinemodule-module.tar.gz` from the [Releases](../../releases) page. In Schwung Manager, open **Modules** and use
-   **Install from File**.
-2. On Machinemodule's page in Schwung Manager, upload your files:
-   - **os** (required): the Machinedrum UW OS 1.63 `.syx`, a free download from Elektron's Machinedrum support page.
-   - **flash** (optional): the Machinedrum UW flash image `.bin`. It gives you the 16 factory kits and the ROM machines' samples.
-     The first start after the upload imports it by booting the emulated Machinedrum once: about 6 minutes, with the module silent
-     meanwhile. After that it starts in about 2 seconds.
-   - **kits** (optional): your own kit dumps (`.syx`, one or many kits per file).
-3. Restart Move, add **Machinemodule** to a track and play the pads.
-
 ## Playing it
 
 Tracks 1-16 are the 16 drum pads (notes 36-51). Hit a pad and every track page shows that track. While a pattern runs, only a pad
@@ -72,6 +58,20 @@ watch **PEAK** on the Master page while it plays, and in this order:
 
 Measured on a standard Move (CM4): a typical beat uses about 40-60% of one block's time; a busy 16-track sequence with ROM machines
 plays clean at the defaults (LTNCY 2, VOICS 10, FX Full).
+
+## Install
+
+Requires Schwung 1.7.3 or later (tested on 1.7.3, on a standard Move).
+
+1. Download `machinemodule-module.tar.gz` from the [Releases](../../releases) page. In Schwung Manager, open **Modules** and use
+   **Install from File**.
+2. On Machinemodule's page in Schwung Manager, upload your files:
+   - **os** (required): the Machinedrum UW OS 1.63 `.syx`, a free download from Elektron's Machinedrum support page.
+   - **flash** (optional): the Machinedrum UW flash image `.bin`. It gives you the 16 factory kits and the ROM machines' samples.
+     The first start after the upload imports it by booting the emulated Machinedrum once: about 6 minutes, with the module silent
+     meanwhile. After that it starts in about 2 seconds.
+   - **kits** (optional): your own kit dumps (`.syx`, one or many kits per file).
+3. Restart Move, add **Machinemodule** to a track and play the pads.
 
 ## Building
 
