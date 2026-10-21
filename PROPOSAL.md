@@ -335,3 +335,11 @@ Prepared for the other builds (not released):
 Still open: the machine picker as DR32's sectioned browser (MACH is the host's enum list now); Copy/Delete of a track checked on the
 device; the MD sequencer's own unaccented-step velocity (for ACAMT's default); per-trigger cost bursts on very busy kits.
 
+## 9. Released (2026-10-21): v0.1.0
+
+Load-tested on the user's Move: a busy 16-track sequence with ROM machines glitched at LTNCY 1 and played clean at LTNCY 2 with
+VOICES 10 and the full master FX (PEAK 75%), which are the defaults. Since the previous round: the engine's address-space limit lifted
+by the supervisor (it crashed inside Schwung, signal 6: MoveOriginal's RLIMIT_AS), PEAK over the last 5 s against the LTNCY budget,
+the master FX knobs named as on the MD, the Kit page as a list, TRK fixed. Tried and removed: a separate sectioned machine page
+(redundant with MACH).
+
