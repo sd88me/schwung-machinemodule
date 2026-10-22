@@ -161,7 +161,7 @@ static void waitForGo()
 int main(int argc, char** argv)
 {
 	waitForGo();
-	if(argc > 2 && !std::strcmp(argv[1], "--exec")) { execv(argv[2], argv + 2); return 127; }	// a helper run under the raised limit
+	if(argc > 2 && !std::strcmp(argv[1], "--exec")) { setpgid(0, 0); execv(argv[2], argv + 2); return 127; }	// a helper run under the raised limit, in its own group so the plugin can stop it and what it starts
 	if(argc < 5) { std::fprintf(stderr, "usage: md-engine <OS.syx> <ROM_SAMPLES.bin|-> <log> <parent pid> [fifo]\n"); return 2; }
 	g_log = std::fopen(argv[3], "a");
 	const pid_t parent = pid_t(std::atoi(argv[4]));	// as the plugin sees itself: Move's host runs in its own pid namespace

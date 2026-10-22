@@ -683,22 +683,34 @@ namespace
 	// The factory kits and ROM samples from the user's flash image (the "flash" upload): bin/md-import boots the emulated Machinedrum
 	// once (about 6 minutes on a Move) and writes factory/FACTORY.syx and factory/ROM_SAMPLES.bin. Run before the engine starts (both at
 	// once could run the Move out of memory), and only for an image not imported yet (factory/.flash-signature). Returns false when
-	// destroy asked the supervisor to stop meanwhile.
+	// destroy asked the supervisor to stop meanwhile. An import that fails or runs past kImportTimeoutS is not retried until the image
+	// changes (factory/.flash-failed), and the engine starts without the ROM machines.
+	static constexpr int kImportTimeoutS = 15 * 60;
+
 	bool importFlash(Instance& in, const char* os)
 	{
-		char flashDir[600], flash[700], factory[600], sigPath[700], exe[600], log[700];
+		char flashDir[600], flash[700], factory[600], sigPath[700], failPath[700], exe[600], log[700];
 		std::snprintf(flashDir, sizeof flashDir, "%s/flash", in.moduleDir);
 		if(!findFile(flashDir, ".bin", flash, sizeof flash)) return true;
 		std::snprintf(factory, sizeof factory, "%s/factory", in.moduleDir);
 		std::snprintf(sigPath, sizeof sigPath, "%s/.flash-signature", factory);
+		std::snprintf(failPath, sizeof failPath, "%s/.flash-failed", factory);
 		char want[64];
 		std::snprintf(want, sizeof want, "%llu", static_cast<unsigned long long>(fileSignature(flash)));
-		if(std::FILE* f = std::fopen(sigPath, "r"))
+		auto matches = [&](const char* path)
 		{
+			std::FILE* f = std::fopen(path, "r");
+			if(!f) return false;
 			char have[64] = {};
 			const bool same = std::fgets(have, sizeof have, f) && !std::strcmp(have, want);
 			std::fclose(f);
-			if(same) return true;
+			return same;
+		};
+		if(matches(sigPath)) return true;
+		if(matches(failPath))
+		{
+			std::snprintf(in.error, sizeof in.error, "The flash image import failed earlier: see factory/import.log. Upload another image to retry");
+			return true;
 		}
 		mkdir(factory, 0755);
 		char gate[600];
@@ -717,14 +729,22 @@ namespace
 		posix_spawn_file_actions_destroy(&fa);
 		if(rc != 0) { std::snprintf(in.error, sizeof in.error, "cannot start the flash import: %s", std::strerror(rc)); return true; }
 		int status = 0;
-		while(waitpid(pid, &status, WNOHANG) != pid)
-			if(sleepOrStop(in, 1000)) { kill(pid, SIGKILL); waitpid(pid, &status, 0); return false; }
-		if(WIFEXITED(status) && WEXITSTATUS(status) == 0)
+		bool timedOut = false;
+		for(int waited = 0; waitpid(pid, &status, WNOHANG) != pid; ++waited)
+		{
+			if(sleepOrStop(in, 1000)) { kill(-pid, SIGKILL); kill(pid, SIGKILL); waitpid(pid, &status, 0); return false; }
+			if(waited >= kImportTimeoutS) { kill(-pid, SIGKILL); kill(pid, SIGKILL); waitpid(pid, &status, 0); timedOut = true; break; }
+		}
+		if(!timedOut && WIFEXITED(status) && WEXITSTATUS(status) == 0)
 		{
 			if(std::FILE* f = std::fopen(sigPath, "w")) { std::fputs(want, f); std::fclose(f); }
+			unlink(failPath);
 			in.error[0] = 0;
+			return true;
 		}
-		else std::snprintf(in.error, sizeof in.error, "The flash image import failed: see factory/import.log (is it a Machinedrum UW flash image?)");
+		if(std::FILE* f = std::fopen(failPath, "w")) { std::fputs(want, f); std::fclose(f); }
+		if(timedOut) std::snprintf(in.error, sizeof in.error, "The flash image import did not finish in 15 minutes: playing without the ROM machines");
+		else std::snprintf(in.error, sizeof in.error, "The flash image import failed: see factory/import.log (is it a Machinedrum UW 1.63 flash image?)");
 		return true;
 	}
 
