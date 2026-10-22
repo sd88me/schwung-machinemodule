@@ -46,6 +46,7 @@ cp "$S/module/help.json" "$DIST/machinemodule/help.json"
 cp "$BUILD/md-engine.stripped" "$DIST/machinemodule/md-engine"
 mkdir -p "$DIST/machinemodule/bin"	# the flash import's helpers (md-import starts the other two from its own folder)
 for f in md-import mdsamples mdProbe; do cp "$BUILD/$f.stripped" "$DIST/machinemodule/bin/$f"; done
+mkdir -p "$DIST/machinemodule/os" "$DIST/machinemodule/flash" "$DIST/machinemodule/kits"	# the upload folders: Manager doesn't create them
 chmod 755 "$DIST/machinemodule/dsp.so" "$DIST/machinemodule/md-engine" "$DIST/machinemodule/bin/"*
 tar -C "$DIST" -czf "$DIST/machinemodule-module.tar.gz" machinemodule
 echo "==> done: $DIST/machinemodule-module.tar.gz ($VERSION)"

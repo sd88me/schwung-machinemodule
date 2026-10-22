@@ -2,7 +2,7 @@
   "id": "machinemodule",
   "name": "Machinemodule",
   "abbrev": "MD",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "min_host_version": "1.7.3",
   "description": "The Elektron Machinedrum SPS-1 UW's sound engine, emulated: 16 tracks on the 16 pads, the editor follows the pad you hit.",
   "author": "sd88me",
