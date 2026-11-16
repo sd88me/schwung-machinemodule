@@ -337,7 +337,7 @@ namespace
 			if(ready)
 				for(int id = 0; id < shm::kMachineIds; ++id)
 					if(const auto* m = machineOf(in, id); m && offered(in, *m)) { displayName(*m, n, sizeof n); o.put("%s\"%s\"", first ? "" : ",", n); first = false; }
-			if(first) o.put("\"GND-EM\"");
+			if(first) o.put("\"(loading)\"");	// not a machine name: Movy re-reads an enum whose only option is parenthesised
 		}
 		o.put("]},");
 		putInt(o, "level", "LEVEL", 0, 127, 100);

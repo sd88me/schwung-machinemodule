@@ -2,7 +2,7 @@
   "id": "machinemodule",
   "name": "Machinemodule",
   "abbrev": "MD",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "min_host_version": "1.7.3",
   "description": "The Elektron Machinedrum SPS-1 UW's sound engine, emulated: 16 tracks on the 16 pads, the editor follows the pad you hit.",
   "author": "sd88me",
@@ -54,5 +54,290 @@
     "component_type": "sound_generator",
     "forks_processes": true,
     "claims_edit_ccs": true
+  },
+  "ui_hierarchy": {
+    "levels": {
+      "root": {
+        "name": "Machinemodule",
+        "params": [
+          {
+            "level": "track",
+            "label": "Track"
+          }
+        ],
+        "knobs": []
+      },
+      "track": {
+        "name": "Track",
+        "child_prefix": "t",
+        "child_count": 16,
+        "child_index_base": 1,
+        "child_index_digits": 2,
+        "params": [
+          {
+            "key": "level",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 100
+          },
+          {
+            "key": "mute",
+            "type": "enum",
+            "options": [
+              "Off",
+              "On"
+            ],
+            "default": 0
+          },
+          {
+            "key": "syn1",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "syn2",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "syn3",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "syn4",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "syn5",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "syn6",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "syn7",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "syn8",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "amd",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "amf",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "eqf",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 64
+          },
+          {
+            "key": "eqg",
+            "type": "int",
+            "min": -64,
+            "max": 63,
+            "default": 0
+          },
+          {
+            "key": "fltf",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "fltw",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 127
+          },
+          {
+            "key": "fltq",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "srr",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "dist",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "vol",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 100
+          },
+          {
+            "key": "pan",
+            "type": "int",
+            "min": -64,
+            "max": 63,
+            "default": 0
+          },
+          {
+            "key": "del",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "rev",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "lfos",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "lfod",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "lfom",
+            "type": "int",
+            "min": 0,
+            "max": 127,
+            "default": 0
+          },
+          {
+            "key": "lfo_track",
+            "type": "enum",
+            "options": [
+              "01-BD",
+              "02-SD",
+              "03-HT",
+              "04-MT",
+              "05-LT",
+              "06-CP",
+              "07-RS",
+              "08-CB",
+              "09-CH",
+              "10-OH",
+              "11-RC",
+              "12-CC",
+              "13-M1",
+              "14-M2",
+              "15-M3",
+              "16-M4"
+            ],
+            "default": 0
+          },
+          {
+            "key": "lfo_param",
+            "type": "enum",
+            "options": [
+              "SYN1",
+              "SYN2",
+              "SYN3",
+              "SYN4",
+              "SYN5",
+              "SYN6",
+              "SYN7",
+              "SYN8",
+              "AMD",
+              "AMF",
+              "EQF",
+              "EQG",
+              "FLTF",
+              "FLTW",
+              "FLTQ",
+              "SRR",
+              "DIST",
+              "VOL",
+              "PAN",
+              "DEL",
+              "REV",
+              "LFOS",
+              "LFOD",
+              "LFOM"
+            ],
+            "default": 0
+          },
+          {
+            "key": "lfo_shp1",
+            "type": "int",
+            "min": 0,
+            "max": 5,
+            "default": 0
+          },
+          {
+            "key": "lfo_shp2",
+            "type": "int",
+            "min": 0,
+            "max": 5,
+            "default": 0
+          },
+          {
+            "key": "lfo_type",
+            "type": "enum",
+            "options": [
+              "FREE",
+              "TRIG",
+              "HOLD"
+            ],
+            "default": 0
+          }
+        ]
+      }
+    }
   }
 }
