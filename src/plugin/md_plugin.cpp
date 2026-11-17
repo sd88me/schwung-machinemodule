@@ -485,6 +485,23 @@ namespace
 		Out o{buf, len};
 		o.put("[{\"key\":\"ui_machine\",\"name\":\"Machine\",\"type\":\"int\",\"min\":0,\"max\":%d,\"default\":0}", shm::kMachineIds - 1);
 		for(int i = 0; i < kMasterBytes; ++i) o.put(",{\"key\":\"mfx%02d\",\"name\":\"FX %d\",\"type\":\"int\",\"min\":0,\"max\":127,\"default\":%d}", i + 1, i + 1, kMasterDefault[i]);
+		// The focused track's parameters, by base key: the host replaces its parameter table with this list when it refreshes, and a
+		// p-lock or modulation of a track knob (t05_level -> level) is refused as "can't automate" unless these are in it.
+		{
+			static const char* const kOffOn[2] = {"Off", "On"};
+			static const char* const kUpdate[3] = {"FREE", "TRIG", "HOLD"};
+			o.put(",");
+			putInt(o, "level", "LEVEL", 0, 127, 100);
+			o.put(",");
+			putEnum(o, "mute", "MUTE", kOffOn, 2, 0);
+			for(int i = 0; i < kRaw; ++i) { o.put(","); putRawParam(o, i, kRawNames[i]); }
+			o.put(",");
+			putEnum(o, "lfo_track", "TRACK", kTrackNames, kTracks, 0); o.put(",");
+			putEnum(o, "lfo_param", "PARAM", kRawNames, kRaw, 0); o.put(",");
+			putInt(o, "lfo_shp1", "SHP1", 0, 5, 0); o.put(",");
+			putInt(o, "lfo_shp2", "SHP2", 0, 5, 0); o.put(",");
+			putEnum(o, "lfo_type", "UPDTE", kUpdate, 3, 0);
+		}
 		o.put("]");
 		return o.ok ? o.n : -1;
 	}
