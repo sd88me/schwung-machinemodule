@@ -307,6 +307,20 @@ namespace
 		o.put("]}");
 	}
 
+	// The track's machine selector: the machines the OS offers, or "(loading)" until the engine has booted (a parenthesised lone option
+	// is what Movy re-reads until it becomes a real list; it looks for it in chain_params as well as the hierarchy).
+	void putMachineEnum(Out& o, Instance& in, bool ready)
+	{
+		o.put("{\"key\":\"machine\",\"name\":\"Machine\",\"short_name\":\"MACH\",\"type\":\"enum\",\"options_as_string\":true,\"options\":[");
+		bool first = true;
+		char n[24];
+		if(ready)
+			for(int id = 0; id < shm::kMachineIds; ++id)
+				if(const auto* m = machineOf(in, id); m && offered(in, *m)) { displayName(*m, n, sizeof n); o.put("%s\"%s\"", first ? "" : ",", n); first = false; }
+		if(first) o.put("\"(loading)\"");
+		o.put("]}");
+	}
+
 	int buildHierarchy(Instance& in, char* buf, int len)
 	{
 		Out o{buf, len};
@@ -330,16 +344,9 @@ namespace
 		openTrackLevel(o, "track", "Track");
 		o.put(",\"params\":[");
 		putInt(o, "ui_track", "TRK", 1, 16, 1);
-		o.put(",{\"key\":\"machine\",\"name\":\"Machine\",\"short_name\":\"MACH\",\"type\":\"enum\",\"options_as_string\":true,\"options\":[");
-		{
-			bool first = true;
-			char n[24];
-			if(ready)
-				for(int id = 0; id < shm::kMachineIds; ++id)
-					if(const auto* m = machineOf(in, id); m && offered(in, *m)) { displayName(*m, n, sizeof n); o.put("%s\"%s\"", first ? "" : ",", n); first = false; }
-			if(first) o.put("\"(loading)\"");	// not a machine name: Movy re-reads an enum whose only option is parenthesised
-		}
-		o.put("]},");
+		o.put(",");
+		putMachineEnum(o, in, ready);
+		o.put(",");
 		putInt(o, "level", "LEVEL", 0, 127, 100);
 		o.put(",");
 		{
@@ -480,10 +487,12 @@ namespace
 		return o.n;
 	}
 
-	int buildChainParams(char* buf, int len)
+	int buildChainParams(Instance& in, char* buf, int len)
 	{
 		Out o{buf, len};
-		o.put("[{\"key\":\"ui_machine\",\"name\":\"Machine\",\"type\":\"int\",\"min\":0,\"max\":%d,\"default\":0}", shm::kMachineIds - 1);
+		o.put("[");
+		putMachineEnum(o, in, machineOf(in, 0) != nullptr);
+		o.put(",{\"key\":\"ui_machine\",\"name\":\"Machine\",\"type\":\"int\",\"min\":0,\"max\":%d,\"default\":0}", shm::kMachineIds - 1);
 		for(int i = 0; i < kMasterBytes; ++i) o.put(",{\"key\":\"mfx%02d\",\"name\":\"FX %d\",\"type\":\"int\",\"min\":0,\"max\":127,\"default\":%d}", i + 1, i + 1, kMasterDefault[i]);
 		// The focused track's parameters, by base key: the host replaces its parameter table with this list when it refreshes, and a
 		// p-lock or modulation of a track knob (t05_level -> level) is refused as "can't automate" unless these are in it.
@@ -1224,7 +1233,7 @@ namespace
 			std::memcpy(buf, in.hier, size_t(n) + 1);
 			return n;
 		}
-		if(!std::strcmp(k, "chain_params")) return buildChainParams(buf, len);
+		if(!std::strcmp(k, "chain_params")) return buildChainParams(in, buf, len);
 		if(!std::strcmp(k, "kit_list"))	// the Kit page's items
 		{
 			const Catalog* c = in.catalog.load(std::memory_order_acquire);
